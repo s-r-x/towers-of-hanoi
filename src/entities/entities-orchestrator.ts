@@ -1,0 +1,206 @@
+import { inject, injectable } from "inversify";
+import type { tEntitiesOrchestrator } from "@/interfaces/entities-orchestrator";
+import type { tRendererLayer } from "@/interfaces/renderer";
+import { PegEntity } from "./peg-entity/peg";
+import { DI_TYPES } from "@/di/types";
+import _ from "lodash";
+import type { tRendererViewportState } from "@/interfaces/state";
+import type { tEventBus } from "@/interfaces/event-bus";
+import type { tGameState } from "@/interfaces/game-state";
+import { DISK_HEIGHT } from "@/config/entities";
+import type {
+  tDiskEntity,
+  tDiskEntityFactory,
+} from "@/interfaces/disk-entity";
+import type { Maybe } from "@/interfaces/util";
+import { checkCollision } from "@/utils/check-collision";
+import { animate } from "@/lib/animation";
+
+@injectable()
+export class EntitiesOrchestrator implements tEntitiesOrchestrator {
+  private isInitialDraw = true;
+  private pegEntities: PegEntity[] = [];
+  private grabbedDiskEntity: Maybe<tDiskEntity> = null;
+  private collidedPegEntity: Maybe<PegEntity> = null;
+  private rootLayer: Maybe<tRendererLayer> = null;
+  private diskEntities: tDiskEntity[] = [];
+  constructor(
+    @inject(DI_TYPES.rendererViewportState)
+    private viewportState: tRendererViewportState,
+    @inject(DI_TYPES.eventBus) private eventBus: tEventBus,
+    @inject(DI_TYPES.gameState) private gameState: tGameState,
+    @inject(DI_TYPES.diskEntityFactory)
+    private diskEntityFactory: tDiskEntityFactory,
+  ) {}
+  public bootstrap(layer: tRendererLayer) {
+    this.rootLayer = layer;
+    this.attachEventBusListeners();
+    this.drawEntities();
+  }
+  private drawEntities() {
+    this.drawPegs();
+    this.drawDisks();
+    this.isInitialDraw = false;
+  }
+  private drawDisks() {
+    const layer = this.rootLayer!;
+    const pegs = this.gameState.pegs;
+    for (let i = 0; i < pegs.length; i++) {
+      const pegEntity = this.pegEntities[i];
+      const disks = pegs[i];
+      if (!_.isEmpty(disks)) {
+        let offsetY = 0;
+        for (let j = 0; j < disks.length; j++) {
+          const weight = disks[j];
+          const disk = this.diskEntityFactory(weight);
+          this.diskEntities.push(disk);
+          if (this.isInitialDraw) {
+            disk.alphaChannel = 0;
+          }
+          disk.draw({
+            layer,
+            x: pegEntity.centerX,
+            y: this.viewportState.height - offsetY * DISK_HEIGHT,
+            weight: weight,
+          });
+          if (j === disks.length - 1) {
+            disk.enableInteraction();
+          }
+          offsetY++;
+        }
+        if (this.isInitialDraw) {
+          animate.to(this.diskEntities, {
+            alphaChannel: 1,
+            stagger: 0.05,
+          });
+        }
+      }
+    }
+  }
+  private drawPegs() {
+    const layer = this.rootLayer!;
+    const pegs = this.gameState.pegs;
+    const pegsXPositions = this.calcPegsXPositions();
+    const { disksCount } = this.gameState;
+    for (let i = 0; i < pegs.length; i++) {
+      const pegEntity = new PegEntity(i);
+      const pegX = pegsXPositions[i];
+      pegEntity.draw({
+        layer,
+        x: pegX,
+        y: this.viewportState.height,
+        height: disksCount * DISK_HEIGHT + 20,
+        animate: this.isInitialDraw,
+      });
+      this.pegEntities.push(pegEntity);
+    }
+  }
+  private destroyEntities() {
+    for (const peg of this.pegEntities) {
+      peg.destroy();
+    }
+    for (const disk of this.diskEntities) {
+      disk.destroy();
+    }
+    this.pegEntities = [];
+    this.diskEntities = [];
+  }
+  private attachEventBusListeners() {
+    this.eventBus.on("rendererViewportUpdated", this.onRendererViewportChange);
+    this.eventBus.on("diskGrabbed", this.onDiskGrabbed);
+    this.eventBus.on("grabbedDiskMoved", this.onGrabbedDiskMove);
+    this.eventBus.on("grabbedDiskReleased", this.onGrabbedDiskRelease);
+    this.eventBus.on("diskPegChanged", this.onDiskPegChange);
+    this.eventBus.on("pegsGenerated", this.onPegsGenerated);
+  }
+  private onPegsGenerated = () => {
+    this.destroyEntities();
+    this.drawEntities();
+  };
+  private onDiskPegChange = ({
+    dstPeg,
+    disk,
+  }: {
+    dstPeg: number;
+    disk: number;
+  }) => {
+    const pegEntity = this.pegEntities[dstPeg];
+    const diskEntity = this.findDiskEntityById(disk);
+    if (!pegEntity || !diskEntity) {
+      console.warn("Cannot find a peg entity or a disk entity");
+      return;
+    }
+    const disksOnPeg = this.gameState.pegs[dstPeg];
+    diskEntity.move({
+      x: pegEntity.centerX,
+      y: this.viewportState.height - (disksOnPeg.length - 1) * DISK_HEIGHT,
+      animate: true,
+    });
+    this.syncEntitiesInteractivityState();
+  };
+  private onDiskGrabbed = ({ weight }: { weight: number }) => {
+    this.grabbedDiskEntity = this.findDiskEntityById(weight);
+    if (!this.grabbedDiskEntity) return;
+  };
+  private onGrabbedDiskMove = () => {
+    const { grabbedDiskEntity: diskEntity } = this;
+    if (!diskEntity) return;
+    const diskRect = diskEntity.collisionRect;
+    for (const peg of this.pegEntities) {
+      const pegRect = peg.collisionRect;
+      if (checkCollision(pegRect, diskRect)) {
+        this.collidedPegEntity = peg;
+      }
+    }
+  };
+  private onGrabbedDiskRelease = () => {
+    const { grabbedDiskEntity, collidedPegEntity } = this;
+    if (grabbedDiskEntity && collidedPegEntity) {
+      this.gameState.moveDisk({
+        disk: grabbedDiskEntity.weight,
+        peg: collidedPegEntity.id,
+      });
+    }
+    this.grabbedDiskEntity = null;
+    this.collidedPegEntity = null;
+  };
+  private onRendererViewportChange = () => {
+    const positions = this.calcPegsXPositions();
+    for (let i = 0; i < positions.length; i++) {
+      const peg = this.pegEntities[i];
+      if (!peg) {
+        throw new Error(
+          `Missing peg at index ${i} while recalculating the positions`,
+        );
+      }
+      peg.move({ x: positions[i], y: this.viewportState.height });
+    }
+  };
+  private syncEntitiesInteractivityState() {
+    const pegs = this.gameState.pegs;
+    for (const disks of pegs) {
+      for (let i = 0; i < disks.length; i++) {
+        const weight = disks[i];
+        const diskEntity = this.findDiskEntityById(weight);
+        if (diskEntity) {
+          if (i === disks.length - 1) {
+            diskEntity.enableInteraction();
+          } else {
+            diskEntity.disableInteraction();
+          }
+        }
+      }
+    }
+  }
+  private findDiskEntityById(id: number) {
+    return this.diskEntities.find((d) => d.weight === id) || null;
+  }
+  private calcPegsXPositions(): [number, number, number] {
+    const xStep = this.viewportState.width / 4;
+    const acc: number[] = [];
+    for (const mul of _.range(1, 4)) {
+      acc.push(xStep * mul);
+    }
+    return acc as [number, number, number];
+  }
+}

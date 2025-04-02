@@ -1,0 +1,24 @@
+html, body {
+	margin: 0;
+	padding: 0;
+}
+button {
+  user-select: none;
+}
+
+#app {
+  display: flex;
+  flex-direction: column-reverse;
+  width: 100vw;
+  height: 100vh;
+  justify-content: center;
+  align-items: center;
+  --content-width: 700px;
+}
+#canvas-root {
+  width: var(--content-width);
+  height: 350px;
+}
+#ui-root {
+  width: var(--content-width);
+}
