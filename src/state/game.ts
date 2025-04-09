@@ -3,6 +3,7 @@ import { DI_TYPES } from "@/di/types";
 import _ from "lodash";
 import type { tEventBus } from "@/interfaces/event-bus";
 import type {
+  tGameCondition,
   tGameState,
   tMoveDiskArgs,
   tPegsState,
@@ -19,12 +20,14 @@ export class GameState implements tGameState {
   public disksCount = 0;
   public pegs: tPegsState = [[], [], []];
   public currentStep = 0;
+  public gameCondition: tGameCondition = "idle";
   private stepsHistory: tStepsHistoryEntry[] = [];
   constructor(@inject(DI_TYPES.eventBus) private eventBus: tEventBus) {
     makeObservable(this, {
       disksCount: observable,
       pegs: observable,
       currentStep: observable,
+      gameCondition: observable,
       canRedoDiskMove: computed,
       canUndoDiskMove: computed,
       changeDisksCount: action,
@@ -33,6 +36,7 @@ export class GameState implements tGameState {
       changeStepsCount: action,
       undoDiskMove: action,
       redoDiskMove: action,
+      changeGameCondition: action,
     });
   }
   public get canRedoDiskMove() {
@@ -137,6 +141,11 @@ export class GameState implements tGameState {
     this.generateDisks();
     this.changeStepsCount(0);
     this.stepsHistory = [];
+    this.changeGameCondition("active");
+  }
+  public changeGameCondition(condition: tGameCondition) {
+    this.gameCondition = condition;
+    this.eventBus.emit("gameConditionChanged", { condition });
   }
   private _moveDisk(step: tStepsHistoryEntry) {
     const srcDisks = this.pegs[step.srcPeg];
@@ -151,5 +160,8 @@ export class GameState implements tGameState {
       dstPeg: step.dstPeg,
       disk,
     });
+    if (dstDisks.length === this.disksCount) {
+      this.changeGameCondition("finished");
+    }
   }
 }

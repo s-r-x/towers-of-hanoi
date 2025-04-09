@@ -18,6 +18,7 @@ export class Application implements tApp {
   ) {}
   public async bootstrap() {
     this.gameState.changeDisksCount(DEFAULT_DISKS_COUNT);
+    this.gameState.changeGameCondition("active");
     await this.renderer.bootstrap();
     this.entitiesOrchestrator.bootstrap(this.renderer.layer);
     this.ui.bootstrap();

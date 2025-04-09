@@ -1,3 +1,5 @@
+import type { tGameCondition } from "./game-state";
+
 export type tEventMap = {
   rendererViewportUpdated: { width: number; height: number };
   diskGrabbed: { weight: number };
@@ -6,6 +8,7 @@ export type tEventMap = {
   disksCountChanged: number;
   diskPegChanged: { srcPeg: number; dstPeg: number; disk: number };
   pegsGenerated: void;
+  gameConditionChanged: { condition: tGameCondition };
 };
 
 export type tEventBus = {

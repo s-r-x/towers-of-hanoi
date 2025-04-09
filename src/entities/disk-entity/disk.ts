@@ -1,10 +1,6 @@
 import { Graphics, Container, Point, FederatedPointerEvent } from "pixi.js";
 import type { tRendererLayer } from "@/interfaces/renderer";
-import {
-  DISK_HEIGHT,
-  DISK_SCALE_STEP,
-  DISK_WIDTH,
-} from "@/config/entities";
+import { DISK_HEIGHT, DISK_SCALE_STEP, DISK_WIDTH } from "@/config/entities";
 import { inject, injectable } from "inversify";
 import type {
   tDiskEntity,
@@ -14,13 +10,17 @@ import type {
 import { DI_TYPES } from "@/di/types";
 import { animate } from "@/lib/animation";
 import type { tEventBus } from "@/interfaces/event-bus";
-import { DISKS_PALETTE } from "@/config/styling";
+import { DISKS_PALETTE, END_GAME_COLOR } from "@/config/styling";
+import { ColorOverlayFilter } from "pixi-filters/color-overlay";
 
 const RADIUS = 25;
 @injectable()
 export class DiskEntity implements tDiskEntity {
   private pixiDisk = new Graphics();
   private pixiContainer = new Container();
+  private colorOverlayFilter = new ColorOverlayFilter({
+    color: END_GAME_COLOR,
+  });
   constructor(
     @inject(DI_TYPES.eventBus) private eventBus: tEventBus,
     public weight: number,
@@ -33,6 +33,12 @@ export class DiskEntity implements tDiskEntity {
   }
   public get collisionRect() {
     return this.pixiContainer.getBounds();
+  }
+  public get endGameColorAlphaChannel() {
+    return this.colorOverlayFilter.alpha;
+  }
+  public set endGameColorAlphaChannel(value: number) {
+    this.colorOverlayFilter.alpha = value;
   }
   public move({ x, y, animate: shouldAnimate }: tMoveDiskEntityArgs) {
     y = this.normalizeY(y);
@@ -61,13 +67,18 @@ export class DiskEntity implements tDiskEntity {
   }
   public draw({ x, weight, y, layer }: tDiskEntityDrawArgs) {
     const width = DISK_WIDTH + DISK_SCALE_STEP * weight;
+    const colorOverlay = this.colorOverlayFilter;
+    colorOverlay.resolution = window.devicePixelRatio;
+    colorOverlay.antialias = "inherit";
+    colorOverlay.alpha = 0;
     const { pixiDisk, pixiContainer } = this;
     pixiContainer.x = x;
     pixiContainer.zIndex = 2;
     pixiContainer.y = this.normalizeY(y);
     pixiDisk
-      .roundRect(-(width / 2), 0, width, DISK_HEIGHT, RADIUS)
+      .roundRect(Math.round(-(width / 2)), 0, width, DISK_HEIGHT, RADIUS)
       .fill(this.getColor(weight));
+    pixiDisk.filters = [colorOverlay];
     pixiContainer.addChild(pixiDisk);
     layer.addChild(pixiContainer);
   }
@@ -76,6 +87,7 @@ export class DiskEntity implements tDiskEntity {
     this.pixiContainer.destroy({ children: true });
     this.pixiDisk = new Graphics();
     this.pixiContainer = new Container();
+    this.colorOverlayFilter = new ColorOverlayFilter({ color: END_GAME_COLOR });
   }
   onPointerDown = (event: FederatedPointerEvent) => {
     this.eventBus.emit("diskGrabbed", { weight: this.weight });

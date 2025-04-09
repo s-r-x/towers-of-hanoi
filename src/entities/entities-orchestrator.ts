@@ -8,10 +8,7 @@ import type { tRendererViewportState } from "@/interfaces/state";
 import type { tEventBus } from "@/interfaces/event-bus";
 import type { tGameState } from "@/interfaces/game-state";
 import { DISK_HEIGHT } from "@/config/entities";
-import type {
-  tDiskEntity,
-  tDiskEntityFactory,
-} from "@/interfaces/disk-entity";
+import type { tDiskEntity, tDiskEntityFactory } from "@/interfaces/disk-entity";
 import type { Maybe } from "@/interfaces/util";
 import { checkCollision } from "@/utils/check-collision";
 import { animate } from "@/lib/animation";
@@ -63,9 +60,6 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
             y: this.viewportState.height - offsetY * DISK_HEIGHT,
             weight: weight,
           });
-          if (j === disks.length - 1) {
-            disk.enableInteraction();
-          }
           offsetY++;
         }
         if (this.isInitialDraw) {
@@ -76,6 +70,7 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
         }
       }
     }
+    this.syncEntitiesInteractivityState();
   }
   private drawPegs() {
     const layer = this.rootLayer!;
@@ -112,7 +107,14 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
     this.eventBus.on("grabbedDiskReleased", this.onGrabbedDiskRelease);
     this.eventBus.on("diskPegChanged", this.onDiskPegChange);
     this.eventBus.on("pegsGenerated", this.onPegsGenerated);
+    this.eventBus.on("gameConditionChanged", this.onGameConditionChanged);
   }
+  private onGameConditionChanged = () => {
+    this.syncEntitiesInteractivityState();
+    if (this.gameState.gameCondition === "finished") {
+      this.animateGameEnd();
+    }
+  };
   private onPegsGenerated = () => {
     this.destroyEntities();
     this.drawEntities();
@@ -183,14 +185,27 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
         const weight = disks[i];
         const diskEntity = this.findDiskEntityById(weight);
         if (diskEntity) {
-          if (i === disks.length - 1) {
-            diskEntity.enableInteraction();
-          } else {
-            diskEntity.disableInteraction();
+          switch (this.gameState.gameCondition) {
+            case "idle":
+            case "finished":
+              diskEntity.disableInteraction();
+              break;
+            case "active":
+              if (i === disks.length - 1) {
+                diskEntity.enableInteraction();
+              } else {
+                diskEntity.disableInteraction();
+              }
           }
         }
       }
     }
+  }
+  private animateGameEnd() {
+    animate.to(this.diskEntities, {
+      endGameColorAlphaChannel: 1,
+      stagger: 0.05,
+    });
   }
   private findDiskEntityById(id: number) {
     return this.diskEntities.find((d) => d.weight === id) || null;

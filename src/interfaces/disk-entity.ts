@@ -16,6 +16,7 @@ export type tMoveDiskEntityArgs = {
 export type tDiskEntity = {
   weight: number;
   alphaChannel: number;
+  endGameColorAlphaChannel: number;
   collisionRect: tEntityCollisionRect;
   draw: (args: tDiskEntityDrawArgs) => void;
   move: (args: tMoveDiskEntityArgs) => void;

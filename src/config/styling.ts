@@ -12,3 +12,4 @@ export const DISKS_PALETTE = [
   "#9b2226",
   "#001219",
 ];
+export const END_GAME_COLOR = 0x5bba6f;
