@@ -15,6 +15,6 @@ export type tGameState = {
   changeDisksCount: (count: number) => void;
   changeStepsCount: (count: number) => void;
   generateDisks: () => void;
-	changeGameCondition: (condition: tGameCondition) => void;
+  changeGameCondition: (condition: tGameCondition) => void;
   reset: () => void;
 };
