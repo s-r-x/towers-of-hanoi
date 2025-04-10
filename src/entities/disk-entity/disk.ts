@@ -12,6 +12,7 @@ import { animate } from "@/lib/animation";
 import type { tEventBus } from "@/interfaces/event-bus";
 import { DISKS_PALETTE, END_GAME_COLOR } from "@/config/styling";
 import { ColorOverlayFilter } from "pixi-filters/color-overlay";
+import { RENDERER_RESOLUTION } from "@/constants";
 
 const RADIUS = 25;
 @injectable()
@@ -68,7 +69,7 @@ export class DiskEntity implements tDiskEntity {
   public draw({ x, weight, y, layer }: tDiskEntityDrawArgs) {
     const width = DISK_WIDTH + DISK_SCALE_STEP * weight;
     const colorOverlay = this.colorOverlayFilter;
-    colorOverlay.resolution = window.devicePixelRatio;
+    colorOverlay.resolution = RENDERER_RESOLUTION;
     colorOverlay.antialias = "inherit";
     colorOverlay.alpha = 0;
     const { pixiDisk, pixiContainer } = this;

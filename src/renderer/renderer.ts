@@ -4,6 +4,7 @@ import type { tRenderer } from "@/interfaces/renderer";
 import { DI_TYPES } from "@/di/types";
 import type { tRendererViewportState } from "@/interfaces/state";
 import { CANVAS_BG_COLOR } from "@/config/styling";
+import { RENDERER_RESOLUTION } from "@/constants";
 
 @injectable()
 export class Renderer implements tRenderer {
@@ -26,7 +27,7 @@ export class Renderer implements tRenderer {
       resizeTo: $root,
       antialias: true,
       backgroundColor: CANVAS_BG_COLOR,
-      resolution: window.devicePixelRatio || 1,
+      resolution: RENDERER_RESOLUTION,
       autoDensity: true,
     });
     this.app.stage.eventMode = "static";
