@@ -1,7 +1,6 @@
 import { observer } from "mobx-react-lite";
 import { RefreshCw as Refresh } from "lucide-react";
 import {
-  Info,
   Plus,
   Minus,
   Footprints,
@@ -23,6 +22,7 @@ import { MAX_DISKS_COUNT, MIN_DISKS_COUNT } from "@/config/game";
 import type { tGameState } from "@/interfaces/game-state";
 import type { tUiState } from "@/interfaces/ui-state";
 import { useCallback } from "react";
+import GameDescriptionDialog from "./components/game-description-dialog";
 import _ from "lodash";
 
 export type tProps = {
@@ -44,7 +44,7 @@ const App = ({ gameState, uiState }: tProps) => {
     <Stack direction="row" alignItems="center" pb={1}>
       <Menu.Root>
         <Menu.Trigger asChild>
-          <IconButton size={BUTTON_SIZE}>
+          <IconButton title="Settings" size={BUTTON_SIZE}>
             <Settings />
           </IconButton>
         </Menu.Trigger>
@@ -86,11 +86,7 @@ const App = ({ gameState, uiState }: tProps) => {
           </IconButton>
         </Tooltip>
       </HStack>
-      <Tooltip content="Info">
-        <IconButton size={BUTTON_SIZE}>
-          <Info />
-        </IconButton>
-      </Tooltip>
+      <GameDescriptionDialog />
       <Tooltip content="Reset">
         <IconButton size={BUTTON_SIZE} onClick={() => gameState.reset()}>
           <Refresh />
