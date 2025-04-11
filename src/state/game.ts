@@ -160,7 +160,7 @@ export class GameState implements tGameState {
       dstPeg: step.dstPeg,
       disk,
     });
-    if (dstDisks.length === this.disksCount) {
+    if (this.pegs[2].length === this.disksCount) {
       this.changeGameCondition("finished");
     }
   }
