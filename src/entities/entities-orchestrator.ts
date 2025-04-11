@@ -116,6 +116,7 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
   private onShowDiskWeightChanged = ({ show }: { show: boolean }) => {
     animate.to(this.diskEntities, {
       weightTextAlphaChannel: show ? 1 : 0,
+      stagger: 0.05,
     });
   };
   private onGameConditionChanged = () => {
