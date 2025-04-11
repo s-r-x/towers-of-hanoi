@@ -1,4 +1,10 @@
-import { Graphics, Container, Point, FederatedPointerEvent } from "pixi.js";
+import {
+  Graphics,
+  Container,
+  Point,
+  FederatedPointerEvent,
+  Text,
+} from "pixi.js";
 import type { tRendererLayer } from "@/interfaces/renderer";
 import { DISK_HEIGHT, DISK_SCALE_STEP, DISK_WIDTH } from "@/config/entities";
 import { inject, injectable } from "inversify";
@@ -19,6 +25,7 @@ const RADIUS = 25;
 export class DiskEntity implements tDiskEntity {
   private pixiDisk = new Graphics();
   private pixiContainer = new Container();
+  private pixiText = new Text();
   private colorOverlayFilter = new ColorOverlayFilter({
     color: END_GAME_COLOR,
   });
@@ -40,6 +47,12 @@ export class DiskEntity implements tDiskEntity {
   }
   public set endGameColorAlphaChannel(value: number) {
     this.colorOverlayFilter.alpha = value;
+  }
+  public get weightTextAlphaChannel() {
+    return this.pixiText.alpha;
+  }
+  public set weightTextAlphaChannel(value: number) {
+    this.pixiText.alpha = value;
   }
   public move({ x, y, animate: shouldAnimate }: tMoveDiskEntityArgs) {
     y = this.normalizeY(y);
@@ -72,7 +85,7 @@ export class DiskEntity implements tDiskEntity {
     colorOverlay.resolution = RENDERER_RESOLUTION;
     colorOverlay.antialias = "inherit";
     colorOverlay.alpha = 0;
-    const { pixiDisk, pixiContainer } = this;
+    const { pixiDisk, pixiContainer, pixiText } = this;
     pixiContainer.x = x;
     pixiContainer.zIndex = 2;
     pixiContainer.y = this.normalizeY(y);
@@ -81,14 +94,21 @@ export class DiskEntity implements tDiskEntity {
       .fill(this.getColor(weight));
     pixiDisk.filters = [colorOverlay];
     pixiContainer.addChild(pixiDisk);
+    pixiText.text = weight + 1;
+    pixiText.style = {
+      fontSize: "14px",
+      fill: 0xffffff,
+      fontFamily: "sans-serif",
+      fontWeight: "normal",
+    };
+    pixiText.x = -pixiText.width / 2;
+    pixiText.y = pixiContainer.height / 2 - pixiText.height / 2;
+    pixiContainer.addChild(pixiText);
     layer.addChild(pixiContainer);
   }
   public destroy() {
     // this.pixiContainer.parent.removeChild(this.pixiContainer);
     this.pixiContainer.destroy({ children: true });
-    this.pixiDisk = new Graphics();
-    this.pixiContainer = new Container();
-    this.colorOverlayFilter = new ColorOverlayFilter({ color: END_GAME_COLOR });
   }
   onPointerDown = (event: FederatedPointerEvent) => {
     this.eventBus.emit("diskGrabbed", { weight: this.weight });

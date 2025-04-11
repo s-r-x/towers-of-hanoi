@@ -9,6 +9,8 @@ export type tEventMap = {
   diskPegChanged: { srcPeg: number; dstPeg: number; disk: number };
   pegsGenerated: void;
   gameConditionChanged: { condition: tGameCondition };
+
+  showDiskWeightChanged: { show: boolean };
 };
 
 export type tEventBus = {

@@ -12,15 +12,18 @@ import type { tRendererViewportState } from "@/interfaces/state";
 import { RendererViewportState } from "@/state/renderer-viewport";
 import { GameState } from "@/state/game";
 import type { tGameState } from "@/interfaces/game-state";
-import { tDiskEntityFactory } from "@/interfaces/disk-entity";
+import type { tDiskEntityFactory } from "@/interfaces/disk-entity";
 import { DiskEntity } from "@/entities/disk-entity/disk";
-import { tUiEntrypoint } from "@/interfaces/ui";
+import type { tUiEntrypoint } from "@/interfaces/ui";
 import { UI } from "@/ui/ui-entrypoint";
+import type { tUiState } from "@/interfaces/ui-state";
+import { UiState } from "@/state/ui";
 
 const container = new Container();
 
 container.bind<tEventBus>(DI_TYPES.eventBus).to(EventBus).inSingletonScope();
 container.bind<tGameState>(DI_TYPES.gameState).to(GameState).inSingletonScope();
+container.bind<tUiState>(DI_TYPES.uiState).to(UiState);
 container
   .bind<tRendererViewportState>(DI_TYPES.rendererViewportState)
   .to(RendererViewportState)

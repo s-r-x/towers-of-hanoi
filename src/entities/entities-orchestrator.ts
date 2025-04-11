@@ -12,6 +12,7 @@ import type { tDiskEntity, tDiskEntityFactory } from "@/interfaces/disk-entity";
 import type { Maybe } from "@/interfaces/util";
 import { checkCollision } from "@/utils/check-collision";
 import { animate } from "@/lib/animation";
+import type { tUiState } from "@/interfaces/ui-state";
 
 @injectable()
 export class EntitiesOrchestrator implements tEntitiesOrchestrator {
@@ -26,6 +27,7 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
     private viewportState: tRendererViewportState,
     @inject(DI_TYPES.eventBus) private eventBus: tEventBus,
     @inject(DI_TYPES.gameState) private gameState: tGameState,
+    @inject(DI_TYPES.uiState) private uiState: tUiState,
     @inject(DI_TYPES.diskEntityFactory)
     private diskEntityFactory: tDiskEntityFactory,
   ) {}
@@ -54,6 +56,7 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
           if (this.isInitialDraw) {
             disk.alphaChannel = 0;
           }
+          disk.weightTextAlphaChannel = this.uiState.showDiskWeight ? 1 : 0;
           disk.draw({
             layer,
             x: pegEntity.centerX,
@@ -108,7 +111,13 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
     this.eventBus.on("diskPegChanged", this.onDiskPegChange);
     this.eventBus.on("pegsGenerated", this.onPegsGenerated);
     this.eventBus.on("gameConditionChanged", this.onGameConditionChanged);
+    this.eventBus.on("showDiskWeightChanged", this.onShowDiskWeightChanged);
   }
+  private onShowDiskWeightChanged = ({ show }: { show: boolean }) => {
+    animate.to(this.diskEntities, {
+      weightTextAlphaChannel: show ? 1 : 0,
+    });
+  };
   private onGameConditionChanged = () => {
     this.syncEntitiesInteractivityState();
     if (this.gameState.gameCondition === "finished") {

@@ -1,24 +1,69 @@
 import { observer } from "mobx-react-lite";
 import { RefreshCw as Refresh } from "lucide-react";
-import { Info } from "lucide-react";
-import { Plus } from "lucide-react";
-import { Minus } from "lucide-react";
-import { Footprints } from "lucide-react";
-import { Undo2 as Undo } from "lucide-react";
-import { Redo2 as Redo } from "lucide-react";
-import { Stack, IconButton, HStack, Tag, NumberInput } from "@chakra-ui/react";
+import {
+  Info,
+  Plus,
+  Minus,
+  Footprints,
+  Undo2 as Undo,
+  Redo2 as Redo,
+  Settings,
+} from "lucide-react";
+import {
+  Stack,
+  IconButton,
+  HStack,
+  Tag,
+  NumberInput,
+  Menu,
+  Portal,
+} from "@chakra-ui/react";
 import { Tooltip } from "./components/ui/tooltip";
-import type { tGameState } from "@/interfaces/game-state";
 import { MAX_DISKS_COUNT, MIN_DISKS_COUNT } from "@/config/game";
+import type { tGameState } from "@/interfaces/game-state";
+import type { tUiState } from "@/interfaces/ui-state";
+import { useCallback } from "react";
+import _ from "lodash";
 
 export type tProps = {
   gameState: tGameState;
+  uiState: tUiState;
 };
 const BUTTON_SIZE = "xs";
 
-const App = ({ gameState }: tProps) => {
+const App = ({ gameState, uiState }: tProps) => {
+  // chakra's checkbox item onCheckedChange callback fires twice on every change (version 3.15.0)
+  const onShowDiskWeightChange = useCallback(
+    _.debounce((value) => {
+      uiState.changeShowDiskWeight(value);
+    }, 100),
+    [uiState.changeShowDiskWeight],
+  );
   return (
     <Stack direction="row" alignItems="center" pb={1}>
+      <Menu.Root>
+        <Menu.Trigger asChild>
+          <IconButton size={BUTTON_SIZE}>
+            <Settings />
+          </IconButton>
+        </Menu.Trigger>
+        <Portal>
+          <Menu.Positioner>
+            <Menu.Content>
+              <Menu.ItemGroup>
+                <Menu.CheckboxItem
+                  value="showDiskWeight"
+                  checked={uiState.showDiskWeight}
+                  onCheckedChange={onShowDiskWeightChange}
+                >
+                  <span>Show disk weight</span>
+                  <Menu.ItemIndicator />
+                </Menu.CheckboxItem>
+              </Menu.ItemGroup>
+            </Menu.Content>
+          </Menu.Positioner>
+        </Portal>
+      </Menu.Root>
       <HStack mr={4}>
         <Tooltip content="Undo">
           <IconButton

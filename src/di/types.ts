@@ -7,4 +7,5 @@ export const DI_TYPES = {
   gameState: Symbol.for("gameState"),
   diskEntityFactory: Symbol.for("diskEntityFactory"),
   ui: Symbol.for("ui"),
+  uiState: Symbol.for("uiState"),
 };
