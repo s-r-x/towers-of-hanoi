@@ -32,6 +32,7 @@ export type tProps = {
 const BUTTON_SIZE = "xs";
 
 const App = ({ gameState, uiState }: tProps) => {
+  const isEndGame = gameState.gameCondition === "finished";
   // chakra's checkbox item onCheckedChange callback fires twice on every change (version 3.15.0)
   const onShowDiskWeightChange = useCallback(
     _.debounce((value) => {
@@ -52,6 +53,7 @@ const App = ({ gameState, uiState }: tProps) => {
             <Menu.Content>
               <Menu.ItemGroup>
                 <Menu.CheckboxItem
+                  disabled={isEndGame}
                   value="showDiskWeight"
                   checked={uiState.showDiskWeight}
                   onCheckedChange={onShowDiskWeightChange}
@@ -69,7 +71,7 @@ const App = ({ gameState, uiState }: tProps) => {
           <IconButton
             size={BUTTON_SIZE}
             onClick={() => gameState.undoDiskMove()}
-            disabled={!gameState.canUndoDiskMove}
+            disabled={!gameState.canUndoDiskMove || isEndGame}
           >
             <Undo />
           </IconButton>
@@ -78,7 +80,7 @@ const App = ({ gameState, uiState }: tProps) => {
           <IconButton
             size={BUTTON_SIZE}
             onClick={() => gameState.redoDiskMove()}
-            disabled={!gameState.canRedoDiskMove}
+            disabled={!gameState.canRedoDiskMove || isEndGame}
           >
             <Redo />
           </IconButton>
