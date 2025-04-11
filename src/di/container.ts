@@ -23,7 +23,7 @@ const container = new Container();
 
 container.bind<tEventBus>(DI_TYPES.eventBus).to(EventBus).inSingletonScope();
 container.bind<tGameState>(DI_TYPES.gameState).to(GameState).inSingletonScope();
-container.bind<tUiState>(DI_TYPES.uiState).to(UiState);
+container.bind<tUiState>(DI_TYPES.uiState).to(UiState).inSingletonScope();
 container
   .bind<tRendererViewportState>(DI_TYPES.rendererViewportState)
   .to(RendererViewportState)
