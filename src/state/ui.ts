@@ -6,7 +6,7 @@ import { action, makeObservable, observable } from "mobx";
 
 @injectable()
 export class UiState implements tUiState {
-  public showDiskWeight = true;
+  public showDiskWeight = false;
   constructor(@inject(DI_TYPES.eventBus) private eventBus: tEventBus) {
     makeObservable(this, {
       showDiskWeight: observable,
