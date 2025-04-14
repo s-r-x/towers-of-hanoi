@@ -250,6 +250,7 @@ export class GameState implements tGameState {
       });
       this.changeStepsCount(this.currentStep + 1);
     }
+		this.solverPromise = null;
     this.stopSolver();
   });
   private _moveDisk(step: tStepsHistoryEntry) {
