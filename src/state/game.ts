@@ -66,13 +66,15 @@ export class GameState implements tGameState {
   public get canRedoDiskMove() {
     return (
       Boolean(this.stepsHistory[this.currentStep]) &&
-      this.gameCondition !== "finished"
+      this.gameCondition !== "finished" &&
+      this.solverCondition !== "active"
     );
   }
   public get canUndoDiskMove() {
     return (
       Boolean(this.stepsHistory[this.currentStep - 1]) &&
-      this.gameCondition !== "finished"
+      this.gameCondition !== "finished" &&
+      this.solverCondition !== "active"
     );
   }
   public changeDisksCount(count: number) {
