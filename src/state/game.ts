@@ -214,6 +214,8 @@ export class GameState implements tGameState {
       this.stepsHistory = [];
       this.changeStepsCount(0);
       this.generateDisks();
+      // animation to default state
+      yield wait(DISK_MOVE_ANIM_DUR_MS);
     }
     const moves: tStepsHistoryEntry[] = [];
     const algorithm = (
