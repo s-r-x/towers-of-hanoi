@@ -56,32 +56,28 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
     for (let i = 0; i < pegs.length; i++) {
       const pegEntity = this.pegEntities[i];
       const disks = pegs[i];
-      if (!_.isEmpty(disks)) {
-        let offsetY = 0;
-        for (let j = 0; j < disks.length; j++) {
-          const weight = disks[j];
-          currentWeights.push(weight);
-          const diskEntity = this.diskEntitiesPool[weight];
-          if (!diskEntity) {
-            throw new Error("No disk entity in the disk entities pool");
-          }
-          this.diskEntities.push(diskEntity);
-          diskEntity.weightTextAlphaChannel = this.uiState.showDiskWeight
-            ? 1
-            : 0;
-          diskEntity.move({
-            x: pegEntity.centerX,
-            y: this.viewportState.height - offsetY * DISK_HEIGHT,
-            // animate the move only if this entity is already visible
-            animate: diskEntity.alphaChannel !== 0,
-          });
-          offsetY++;
+      let offsetY = 0;
+      for (let j = 0; j < disks.length; j++) {
+        const weight = disks[j];
+        currentWeights.push(weight);
+        const diskEntity = this.diskEntitiesPool[weight];
+        if (!diskEntity) {
+          throw new Error("No disk entity in the disk entities pool");
         }
-        animate.to(this.diskEntities, {
-          alphaChannel: 1,
-          stagger: 0.05,
+        this.diskEntities.push(diskEntity);
+        diskEntity.weightTextAlphaChannel = this.uiState.showDiskWeight ? 1 : 0;
+        diskEntity.move({
+          x: pegEntity.centerX,
+          y: this.viewportState.height - offsetY * DISK_HEIGHT,
+          // animate the move only if this entity is already visible
+          animate: diskEntity.alphaChannel !== 0,
         });
+        offsetY++;
       }
+      animate.to(this.diskEntities, {
+        alphaChannel: 1,
+        stagger: 0.05,
+      });
     }
     const staleDiskEntities = oldDiskEntities.filter(
       (e) => !currentWeights.includes(e.weight),
@@ -102,24 +98,25 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
     const pegs = this.gameState.pegs;
     const pegsXPositions = this.calcPegsXPositions();
     const { disksCount } = this.gameState;
-    for (let i = 0; i < pegs.length; i++) {
-      const pegEntity = new PegEntity(i);
-      const pegX = pegsXPositions[i];
-      pegEntity.draw({
-        layer,
-        x: pegX,
-        y: this.viewportState.height,
-        height: disksCount * DISK_HEIGHT + 20,
-        animate: this.isInitialDraw,
+    const offset = (MAX_DISKS_COUNT - disksCount) * DISK_HEIGHT;
+    if (this.isInitialDraw) {
+      for (let i = 0; i < pegs.length; i++) {
+        const pegEntity = new PegEntity(i);
+        const pegX = pegsXPositions[i];
+        pegEntity.draw({
+          layer,
+          x: pegX,
+          y: this.viewportState.height,
+          yOffset: offset,
+          height: DISK_HEIGHT * MAX_DISKS_COUNT,
+        });
+        this.pegEntities.push(pegEntity);
+      }
+    } else {
+      animate.to(this.pegEntities, {
+        yOffset: offset,
       });
-      this.pegEntities.push(pegEntity);
     }
-  }
-  private destroyEntities() {
-    for (const peg of this.pegEntities) {
-      peg.destroy();
-    }
-    this.pegEntities = [];
   }
   private attachEventBusListeners() {
     this.eventBus.on("rendererViewportUpdated", this.onRendererViewportChange);
@@ -150,7 +147,6 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
     }
   };
   private onPegsGenerated = () => {
-    this.destroyEntities();
     this.drawEntities();
   };
   private onDiskPegChange = ({

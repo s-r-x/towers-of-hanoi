@@ -1,15 +1,25 @@
 import type { tRendererLayer } from "@/interfaces/renderer";
 import { PEG_WIDTH } from "@/config/entities";
 import { Graphics, Container } from "pixi.js";
-import { animate } from "@/lib/animation";
 import { PEG_COLOR } from "@/config/styling";
 
-const RADIUS = 25;
+const CORNER_RADIUS = 25;
+const PEG_TIP_HEIGHT = 10;
+const PEG_FREE_SPACE = 20;
+
 export class PegEntity {
+  private _yOffset = 0;
+  private yStart = 0;
   private pixiPeg = new Graphics();
   private pixiContainer = new Container();
-  private pixiMask = new Graphics();
   constructor(public id: number) {}
+  public get yOffset() {
+    return this._yOffset;
+  }
+  public set yOffset(value: number) {
+    this._yOffset = value;
+    this.pixiContainer.y = this.normalizeY(value);
+  }
   public get collisionRect() {
     return this.pixiContainer.getBounds();
   }
@@ -24,51 +34,34 @@ export class PegEntity {
   }
   public move({ x, y }: { x: number; y: number }) {
     this.pixiContainer.x = this.normalizeX(x);
-    this.pixiContainer.y = this.normalizeY(y, this.height);
-    // TODO
-    // this.pixiPeg.x = this.normalizeX(x - this.x);
-    // this.pixiPeg.y = this.normalizeY(y - this.y, this.height);
+    this.pixiContainer.y = this.normalizeY(y);
   }
   public draw({
     layer,
     x,
     y,
+    yOffset,
     height,
-    animate: shouldAnimate,
   }: {
     layer: tRendererLayer;
     x: number;
     y: number;
+    yOffset: number;
     height: number;
-    animate?: boolean;
   }) {
-    const { pixiContainer, pixiMask } = this;
-    if (shouldAnimate) {
-      pixiMask.rect(-PEG_WIDTH, 0, PEG_WIDTH, height).fill(0xffffff);
-    }
-    this.pixiPeg.roundRect(0, 0, PEG_WIDTH, height, RADIUS).fill(PEG_COLOR);
-    pixiContainer.x = this.normalizeX(x);
-    pixiContainer.y = this.normalizeY(y, height);
+    this.yStart = y;
+    const { pixiContainer } = this;
+    height += PEG_FREE_SPACE + PEG_TIP_HEIGHT;
+    this.pixiPeg
+      .roundRect(0, 0, PEG_WIDTH, height, CORNER_RADIUS)
+      .fill(PEG_COLOR);
     pixiContainer.addChild(this.pixiPeg);
-    if (shouldAnimate) {
-      pixiContainer.mask = pixiMask;
-      pixiContainer.addChild(pixiMask);
-    }
+    pixiContainer.x = this.normalizeX(x);
+    pixiContainer.y = this.normalizeY(yOffset);
     layer.addChild(pixiContainer);
-    if (shouldAnimate) {
-      animate.to(this.pixiMask, {
-        pixi: {
-          x: PEG_WIDTH,
-        },
-      });
-    }
   }
   public destroy() {
     this.pixiContainer.destroy({ children: true });
-    this.pixiContainer = new Container();
-    this.pixiMask = new Graphics();
-    this.pixiPeg = new Graphics();
-    // this.pixiContainer.parent.removeChild(this.pixiContainer);
   }
   private get height() {
     return this.pixiContainer.height;
@@ -76,7 +69,7 @@ export class PegEntity {
   private normalizeX(x: number) {
     return x - PEG_WIDTH / 2;
   }
-  private normalizeY(y: number, height: number) {
-    return y - height;
+  private normalizeY(offset: number) {
+    return this.yStart - this.height + PEG_TIP_HEIGHT + offset;
   }
 }
