@@ -7,29 +7,34 @@ import type {
   tGameState,
   tMoveDiskArgs,
   tPegsState,
+  tSolverCondition,
+  tStepsHistoryEntry,
 } from "@/interfaces/game-state";
 import { MAX_DISKS_COUNT, MIN_DISKS_COUNT } from "@/config/game";
-import { observable, action, makeObservable, computed } from "mobx";
+import { observable, action, makeObservable, computed, reaction } from "mobx";
+import { wait } from "@/utils/wait";
+import { DISK_MOVE_ANIM_DUR_MS } from "@/config/animation";
 
-type tStepsHistoryEntry = {
-  srcPeg: number;
-  dstPeg: number;
-};
 @injectable()
 export class GameState implements tGameState {
   public disksCount = 0;
   public pegs: tPegsState = [[], [], []];
   public currentStep = 0;
   public gameCondition: tGameCondition = "idle";
-  private stepsHistory: tStepsHistoryEntry[] = [];
+  public solverCondition: tSolverCondition = "inactive";
+  public stepsHistory: tStepsHistoryEntry[] = [];
   constructor(@inject(DI_TYPES.eventBus) private eventBus: tEventBus) {
     makeObservable(this, {
       disksCount: observable,
       pegs: observable,
       currentStep: observable,
       gameCondition: observable,
+      solverCondition: observable,
+      stepsHistory: observable,
       canRedoDiskMove: computed,
       canUndoDiskMove: computed,
+      isDisksInteractive: computed,
+      canStartSolver: computed,
       changeDisksCount: action,
       generateDisks: action,
       reset: action,
@@ -37,13 +42,37 @@ export class GameState implements tGameState {
       undoDiskMove: action,
       redoDiskMove: action,
       changeGameCondition: action,
+      startSolver: action,
+      stopSolver: action,
     });
+    reaction(
+      () => this.isDisksInteractive,
+      (isInteractive) => {
+        this.eventBus.emit("disksInteractivityChanged", { isInteractive });
+      },
+    );
+  }
+  public get canStartSolver() {
+    return (
+      this.gameCondition !== "finished" && this.solverCondition === "inactive"
+    );
+  }
+  public get isDisksInteractive() {
+    return (
+      this.gameCondition === "active" && this.solverCondition === "inactive"
+    );
   }
   public get canRedoDiskMove() {
-    return Boolean(this.stepsHistory[this.currentStep]);
+    return (
+      Boolean(this.stepsHistory[this.currentStep]) &&
+      this.gameCondition !== "finished"
+    );
   }
   public get canUndoDiskMove() {
-    return Boolean(this.stepsHistory[this.currentStep - 1]);
+    return (
+      Boolean(this.stepsHistory[this.currentStep - 1]) &&
+      this.gameCondition !== "finished"
+    );
   }
   public changeDisksCount(count: number) {
     if (count <= MAX_DISKS_COUNT && count >= MIN_DISKS_COUNT) {
@@ -100,7 +129,7 @@ export class GameState implements tGameState {
       // TODO:: create a separate event
       return emitNoopMoveEvent();
     } else {
-      // clearing the the dangling history we are not at the end
+      // clearing the dangling history if we are not at the end
       if (this.stepsHistory[this.currentStep]) {
         this.stepsHistory.splice(this.currentStep);
       }
@@ -142,10 +171,59 @@ export class GameState implements tGameState {
     this.changeStepsCount(0);
     this.stepsHistory = [];
     this.changeGameCondition("active");
+    this.stopSolver();
   }
   public changeGameCondition(condition: tGameCondition) {
     this.gameCondition = condition;
     this.eventBus.emit("gameConditionChanged", { condition });
+  }
+  public async startSolver() {
+    if (this.solverCondition === "active") return;
+    this.solverCondition = "active";
+    if (!_.isEmpty(this.stepsHistory)) {
+      this.stepsHistory = [];
+      this.changeStepsCount(0);
+      this.generateDisks();
+    }
+    const moves: tStepsHistoryEntry[] = [];
+    const algorithm = (
+      n: number,
+      srcPeg: number,
+      tmpPeg: number,
+      dstPeg: number,
+    ) => {
+      if (n === 1) {
+        moves.push({ srcPeg, dstPeg });
+        return;
+      }
+
+      algorithm(n - 1, srcPeg, dstPeg, tmpPeg);
+
+      if (this.solverCondition === "active") {
+        moves.push({ srcPeg, dstPeg });
+      }
+
+      algorithm(n - 1, tmpPeg, srcPeg, dstPeg);
+    };
+    algorithm(this.disksCount, 0, 1, 2);
+    for (const move of moves) {
+      if (this.solverCondition !== "active") {
+        return;
+      }
+      this._moveDisk(move);
+      await wait(DISK_MOVE_ANIM_DUR_MS);
+      this.stepsHistory.push({
+        srcPeg: move.srcPeg,
+        dstPeg: move.dstPeg,
+      });
+      this.changeStepsCount(this.currentStep + 1);
+    }
+    this.stopSolver();
+  }
+  public stopSolver() {
+    if (this.solverCondition === "active") {
+      this.solverCondition = "inactive";
+    }
   }
   private _moveDisk(step: tStepsHistoryEntry) {
     const srcDisks = this.pegs[step.srcPeg];

@@ -112,7 +112,14 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
     this.eventBus.on("pegsGenerated", this.onPegsGenerated);
     this.eventBus.on("gameConditionChanged", this.onGameConditionChanged);
     this.eventBus.on("showDiskWeightChanged", this.onShowDiskWeightChanged);
+    this.eventBus.on(
+      "disksInteractivityChanged",
+      this.onDisksInteractivityChanged,
+    );
   }
+  private onDisksInteractivityChanged = () => {
+    this.syncEntitiesInteractivityState();
+  };
   private onShowDiskWeightChanged = ({ show }: { show: boolean }) => {
     animate.to(this.diskEntities, {
       weightTextAlphaChannel: show ? 1 : 0,
@@ -120,7 +127,6 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
     });
   };
   private onGameConditionChanged = () => {
-    this.syncEntitiesInteractivityState();
     if (this.gameState.gameCondition === "finished") {
       this.animateGameEnd();
     }
@@ -190,23 +196,18 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
   };
   private syncEntitiesInteractivityState() {
     const pegs = this.gameState.pegs;
+    const { isDisksInteractive: isInteractive } = this.gameState;
     for (const disks of pegs) {
       for (let i = 0; i < disks.length; i++) {
         const weight = disks[i];
         const diskEntity = this.findDiskEntityById(weight);
-        if (diskEntity) {
-          switch (this.gameState.gameCondition) {
-            case "idle":
-            case "finished":
-              diskEntity.disableInteraction();
-              break;
-            case "active":
-              if (i === disks.length - 1) {
-                diskEntity.enableInteraction();
-              } else {
-                diskEntity.disableInteraction();
-              }
-          }
+        if (!diskEntity) {
+          continue;
+        }
+        if (isInteractive && i === disks.length - 1) {
+          diskEntity.enableInteraction();
+        } else {
+          diskEntity.disableInteraction();
         }
       }
     }

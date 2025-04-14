@@ -62,6 +62,26 @@ const App = ({ gameState, uiState }: tProps) => {
                   <Menu.ItemIndicator />
                 </Menu.CheckboxItem>
               </Menu.ItemGroup>
+              {gameState.solverCondition === "active" ? (
+                <Menu.Item
+                  value="stopAlgorithm"
+                  onClick={() => {
+                    gameState.stopSolver();
+                  }}
+                >
+                  Stop the algorithm
+                </Menu.Item>
+              ) : (
+                <Menu.Item
+                  disabled={!gameState.canStartSolver}
+                  value="startAlgorithm"
+                  onClick={() => {
+                    gameState.startSolver();
+                  }}
+                >
+                  Run the algorithm
+                </Menu.Item>
+              )}
             </Menu.Content>
           </Menu.Positioner>
         </Portal>
@@ -71,7 +91,7 @@ const App = ({ gameState, uiState }: tProps) => {
           <IconButton
             size={BUTTON_SIZE}
             onClick={() => gameState.undoDiskMove()}
-            disabled={!gameState.canUndoDiskMove || isEndGame}
+            disabled={!gameState.canUndoDiskMove}
           >
             <Undo />
           </IconButton>
@@ -80,7 +100,7 @@ const App = ({ gameState, uiState }: tProps) => {
           <IconButton
             size={BUTTON_SIZE}
             onClick={() => gameState.redoDiskMove()}
-            disabled={!gameState.canRedoDiskMove || isEndGame}
+            disabled={!gameState.canRedoDiskMove}
           >
             <Redo />
           </IconButton>

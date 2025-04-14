@@ -19,6 +19,7 @@ import type { tEventBus } from "@/interfaces/event-bus";
 import { DISKS_PALETTE, END_GAME_COLOR } from "@/config/styling";
 import { ColorOverlayFilter } from "pixi-filters/color-overlay";
 import { RENDERER_RESOLUTION } from "@/constants";
+import { DISK_MOVE_ANIM_DUR_MS } from "@/config/animation";
 
 const RADIUS = 25;
 @injectable()
@@ -62,6 +63,7 @@ export class DiskEntity implements tDiskEntity {
           x,
           y,
         },
+        duration: DISK_MOVE_ANIM_DUR_MS / 1000,
       });
     } else {
       this.pixiContainer.x = x;
