@@ -82,6 +82,7 @@ export class DiskEntity implements tDiskEntity {
     this.pixiContainer.off("pointerdown", this.onPointerDown);
   }
   public draw({ x, weight, y, layer }: tDiskEntityDrawArgs) {
+    this.alphaChannel = 0;
     const width = DISK_WIDTH + DISK_SCALE_STEP * weight;
     const colorOverlay = this.colorOverlayFilter;
     colorOverlay.resolution = RENDERER_RESOLUTION;

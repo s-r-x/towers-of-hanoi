@@ -13,6 +13,7 @@ import type { Maybe } from "@/interfaces/util";
 import { checkCollision } from "@/utils/check-collision";
 import { animate } from "@/lib/animation";
 import type { tUiState } from "@/interfaces/ui-state";
+import { MAX_DISKS_COUNT } from "@/config/game";
 
 @injectable()
 export class EntitiesOrchestrator implements tEntitiesOrchestrator {
@@ -21,6 +22,7 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
   private grabbedDiskEntity: Maybe<tDiskEntity> = null;
   private collidedPegEntity: Maybe<PegEntity> = null;
   private rootLayer: Maybe<tRendererLayer> = null;
+  private diskEntitiesPool: tDiskEntity[] = [];
   private diskEntities: tDiskEntity[] = [];
   constructor(
     @inject(DI_TYPES.rendererViewportState)
@@ -32,6 +34,11 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
     private diskEntityFactory: tDiskEntityFactory,
   ) {}
   public bootstrap(layer: tRendererLayer) {
+    this.diskEntitiesPool = _.range(0, MAX_DISKS_COUNT).map((weight) => {
+      const entity = this.diskEntityFactory(weight);
+      entity.draw({ x: 0, y: 0, layer, weight });
+      return entity;
+    });
     this.rootLayer = layer;
     this.attachEventBusListeners();
     this.drawEntities();
@@ -42,8 +49,10 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
     this.isInitialDraw = false;
   }
   private drawDisks() {
-    const layer = this.rootLayer!;
     const pegs = this.gameState.pegs;
+    const oldDiskEntities = this.diskEntities;
+    this.diskEntities = [];
+    const currentWeights: number[] = [];
     for (let i = 0; i < pegs.length; i++) {
       const pegEntity = this.pegEntities[i];
       const disks = pegs[i];
@@ -51,28 +60,41 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
         let offsetY = 0;
         for (let j = 0; j < disks.length; j++) {
           const weight = disks[j];
-          const disk = this.diskEntityFactory(weight);
-          this.diskEntities.push(disk);
-          if (this.isInitialDraw) {
-            disk.alphaChannel = 0;
+          currentWeights.push(weight);
+          const diskEntity = this.diskEntitiesPool[weight];
+          if (!diskEntity) {
+            throw new Error("No disk entity in the disk entities pool");
           }
-          disk.weightTextAlphaChannel = this.uiState.showDiskWeight ? 1 : 0;
-          disk.draw({
-            layer,
+          this.diskEntities.push(diskEntity);
+          diskEntity.weightTextAlphaChannel = this.uiState.showDiskWeight
+            ? 1
+            : 0;
+          diskEntity.move({
             x: pegEntity.centerX,
             y: this.viewportState.height - offsetY * DISK_HEIGHT,
-            weight: weight,
+            // animate the move only if this entity is already visible
+            animate: diskEntity.alphaChannel !== 0,
           });
           offsetY++;
         }
-        if (this.isInitialDraw) {
-          animate.to(this.diskEntities, {
-            alphaChannel: 1,
-            stagger: 0.05,
-          });
-        }
+        animate.to(this.diskEntities, {
+          alphaChannel: 1,
+          stagger: 0.05,
+        });
       }
     }
+    const staleDiskEntities = oldDiskEntities.filter(
+      (e) => !currentWeights.includes(e.weight),
+    );
+    if (!_.isEmpty(staleDiskEntities)) {
+      animate.to(staleDiskEntities, {
+        alphaChannel: 0,
+      });
+      for (const entity of staleDiskEntities) {
+        entity.disableInteraction();
+      }
+    }
+
     this.syncEntitiesInteractivityState();
   }
   private drawPegs() {
@@ -97,11 +119,7 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
     for (const peg of this.pegEntities) {
       peg.destroy();
     }
-    for (const disk of this.diskEntities) {
-      disk.destroy();
-    }
     this.pegEntities = [];
-    this.diskEntities = [];
   }
   private attachEventBusListeners() {
     this.eventBus.on("rendererViewportUpdated", this.onRendererViewportChange);
