@@ -39,7 +39,7 @@ export class GameState implements tGameState {
       generateDisks: action,
       reset: action,
       changeStepsCount: action,
-			moveDisk: action,
+      moveDisk: action,
       undoDiskMove: action,
       redoDiskMove: action,
       changeGameCondition: action,
