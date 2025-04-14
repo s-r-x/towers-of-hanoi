@@ -11,9 +11,18 @@ import type {
   tStepsHistoryEntry,
 } from "@/interfaces/game-state";
 import { MAX_DISKS_COUNT, MIN_DISKS_COUNT } from "@/config/game";
-import { observable, action, makeObservable, computed, reaction } from "mobx";
+import {
+  observable,
+  action,
+  makeObservable,
+  computed,
+  reaction,
+  flow,
+} from "mobx";
 import { wait } from "@/utils/wait";
 import { DISK_MOVE_ANIM_DUR_MS } from "@/config/animation";
+import { CancellablePromise } from "mobx/dist/internal";
+import { Maybe } from "@/interfaces/util";
 
 @injectable()
 export class GameState implements tGameState {
@@ -23,6 +32,7 @@ export class GameState implements tGameState {
   public gameCondition: tGameCondition = "idle";
   public solverCondition: tSolverCondition = "inactive";
   public stepsHistory: tStepsHistoryEntry[] = [];
+  private solverPromise: Maybe<CancellablePromise<void>> = null;
   constructor(@inject(DI_TYPES.eventBus) private eventBus: tEventBus) {
     makeObservable(this, {
       disksCount: observable,
@@ -43,7 +53,7 @@ export class GameState implements tGameState {
       undoDiskMove: action,
       redoDiskMove: action,
       changeGameCondition: action,
-      startSolver: action,
+      //startSolver: flow,
       stopSolver: action,
     });
     reaction(
@@ -180,7 +190,24 @@ export class GameState implements tGameState {
     this.gameCondition = condition;
     this.eventBus.emit("gameConditionChanged", { condition });
   }
+  public stopSolver() {
+    if (this.solverCondition === "active") {
+      this.solverCondition = "inactive";
+    }
+    this.solverPromise?.cancel();
+    this.solverPromise = null;
+  }
   public async startSolver() {
+    this.solverPromise = this._startSolver();
+    this.solverPromise.catch((e) => {
+      if (e?.message === "FLOW_CANCELLED") {
+        console.log("solver has been cancelled");
+      } else {
+        console.error(e);
+      }
+    });
+  }
+  private _startSolver = flow(function* (this: GameState) {
     if (this.solverCondition === "active") return;
     this.solverCondition = "active";
     if (!_.isEmpty(this.stepsHistory)) {
@@ -214,7 +241,7 @@ export class GameState implements tGameState {
         return;
       }
       this._moveDisk(move);
-      await wait(DISK_MOVE_ANIM_DUR_MS);
+      yield wait(DISK_MOVE_ANIM_DUR_MS);
       this.stepsHistory.push({
         srcPeg: move.srcPeg,
         dstPeg: move.dstPeg,
@@ -222,12 +249,7 @@ export class GameState implements tGameState {
       this.changeStepsCount(this.currentStep + 1);
     }
     this.stopSolver();
-  }
-  public stopSolver() {
-    if (this.solverCondition === "active") {
-      this.solverCondition = "inactive";
-    }
-  }
+  });
   private _moveDisk(step: tStepsHistoryEntry) {
     const srcDisks = this.pegs[step.srcPeg];
     const dstDisks = this.pegs[step.dstPeg];
