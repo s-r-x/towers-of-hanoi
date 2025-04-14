@@ -143,7 +143,14 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
   };
   private onGameConditionChanged = () => {
     if (this.gameState.gameCondition === "finished") {
-      this.animateGameEnd();
+      animate.to(this.diskEntities, {
+        endGameColorAlphaChannel: 1,
+        stagger: 0.05,
+      });
+    } else {
+      animate.to(this.diskEntities, {
+        endGameColorAlphaChannel: 0,
+      });
     }
   };
   private onPegsGenerated = () => {
@@ -225,12 +232,6 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
         }
       }
     }
-  }
-  private animateGameEnd() {
-    animate.to(this.diskEntities, {
-      endGameColorAlphaChannel: 1,
-      stagger: 0.05,
-    });
   }
   private findDiskEntityById(id: number) {
     return this.diskEntities.find((d) => d.weight === id) || null;
