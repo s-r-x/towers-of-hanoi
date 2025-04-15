@@ -33,8 +33,9 @@ export class PegEntity {
     return this.x + PEG_WIDTH / 2;
   }
   public move({ x, y }: { x: number; y: number }) {
+    this.yStart = y;
     this.pixiContainer.x = this.normalizeX(x);
-    this.pixiContainer.y = this.normalizeY(y);
+    this.pixiContainer.y = this.normalizeY(this._yOffset);
   }
   public draw({
     layer,
@@ -50,6 +51,7 @@ export class PegEntity {
     height: number;
   }) {
     this.yStart = y;
+    this._yOffset = yOffset;
     const { pixiContainer } = this;
     height += PEG_FREE_SPACE + PEG_TIP_HEIGHT;
     this.pixiPeg

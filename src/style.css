@@ -1,6 +1,7 @@
-html, body {
-	margin: 0;
-	padding: 0;
+html,
+body {
+  margin: 0;
+  padding: 0;
 }
 button {
   user-select: none;
@@ -14,10 +15,22 @@ button {
   justify-content: center;
   align-items: center;
   --content-width: 700px;
+  --canvas-height: 394px;
+  @media (max-width: 750px), (max-height: 450px) {
+    height: auto;
+    --content-width: 100vw;
+    --canvas-height: 100dvh;
+    & #ui-root {
+      padding: 5px;
+      position: fixed;
+      top: 0;
+      left: 0;
+    }
+  }
 }
 #canvas-root {
   width: var(--content-width);
-  height: 350px;
+  height: var(--canvas-height);
 }
 #ui-root {
   width: var(--content-width);

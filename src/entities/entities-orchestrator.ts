@@ -203,16 +203,17 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
     this.collidedPegEntity = null;
   };
   private onRendererViewportChange = () => {
-    const positions = this.calcPegsXPositions();
-    for (let i = 0; i < positions.length; i++) {
+    const pegsPositions = this.calcPegsXPositions();
+    for (let i = 0; i < pegsPositions.length; i++) {
       const peg = this.pegEntities[i];
       if (!peg) {
         throw new Error(
           `Missing peg at index ${i} while recalculating the positions`,
         );
       }
-      peg.move({ x: positions[i], y: this.uiState.canvasViewport.height });
+      peg.move({ x: pegsPositions[i], y: this.uiState.canvasViewport.height });
     }
+    this.drawDisks();
   };
   private syncEntitiesInteractivityState() {
     const pegs = this.gameState.pegs;

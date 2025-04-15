@@ -4,6 +4,7 @@ import type { tRenderer } from "@/interfaces/renderer";
 import { DI_TYPES } from "@/di/types";
 import { CANVAS_BG_COLOR } from "@/config/styling";
 import { RENDERER_RESOLUTION } from "@/constants";
+import _ from "lodash";
 import type { tUiState } from "@/interfaces/ui-state";
 
 @injectable()
@@ -37,5 +38,21 @@ export class Renderer implements tRenderer {
       height: this.app.screen.height,
     });
     $root.appendChild(this.app.canvas);
+    this.watchCanvasViewportChange($root);
+  }
+  private watchCanvasViewportChange($el: HTMLElement) {
+    let isFirstResizeCall = true;
+    const onResize = _.throttle(() => {
+      if (isFirstResizeCall) {
+        isFirstResizeCall = false;
+        return;
+      }
+      this.uiState.updateCanvasViewport({
+        width: this.app.screen.width,
+        height: this.app.screen.height,
+      });
+    }, 250);
+    const resizeObserver = new ResizeObserver(onResize);
+    resizeObserver.observe($el);
   }
 }

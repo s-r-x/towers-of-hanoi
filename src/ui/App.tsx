@@ -41,7 +41,7 @@ const App = ({ gameState, uiState }: tProps) => {
     [uiState.changeShowDiskWeight],
   );
   return (
-    <Stack direction="row" alignItems="center" pb={1}>
+    <Stack direction="row" alignItems="center" pb={1} flexWrap="wrap">
       <Menu.Root>
         <Menu.Trigger asChild>
           <IconButton title="Settings" size={BUTTON_SIZE}>
@@ -145,7 +145,14 @@ const App = ({ gameState, uiState }: tProps) => {
           </Tooltip>
         </HStack>
       </NumberInput.Root>
-      <Tag.Root size="lg" p={2} ml="auto">
+      <Tag.Root
+        size="lg"
+        p={2}
+        ml={{
+          sm: 0,
+          md: "auto",
+        }}
+      >
         <Tag.Label>{gameState.currentStep}</Tag.Label>
         <Tag.EndElement>
           <Footprints />
