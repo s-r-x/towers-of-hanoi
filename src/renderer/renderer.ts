@@ -2,16 +2,16 @@ import { Application } from "pixi.js";
 import { inject, injectable } from "inversify";
 import type { tRenderer } from "@/interfaces/renderer";
 import { DI_TYPES } from "@/di/types";
-import type { tRendererViewportState } from "@/interfaces/state";
 import { CANVAS_BG_COLOR } from "@/config/styling";
 import { RENDERER_RESOLUTION } from "@/constants";
+import type { tUiState } from "@/interfaces/ui-state";
 
 @injectable()
 export class Renderer implements tRenderer {
   private app: Application;
   constructor(
-    @inject(DI_TYPES.rendererViewportState)
-    private viewportState: tRendererViewportState,
+    @inject(DI_TYPES.uiState)
+    private uiState: tUiState,
   ) {
     this.app = new Application();
   }
@@ -32,10 +32,10 @@ export class Renderer implements tRenderer {
     });
     this.app.stage.eventMode = "static";
     this.app.stage.hitArea = this.app.screen;
-    this.viewportState.updateViewport(
-      this.app.screen.width,
-      this.app.screen.height,
-    );
+    this.uiState.updateCanvasViewport({
+      width: this.app.screen.width,
+      height: this.app.screen.height,
+    });
     $root.appendChild(this.app.canvas);
   }
 }

@@ -4,7 +4,6 @@ import type { tRendererLayer } from "@/interfaces/renderer";
 import { PegEntity } from "./peg-entity/peg";
 import { DI_TYPES } from "@/di/types";
 import _ from "lodash";
-import type { tRendererViewportState } from "@/interfaces/state";
 import type { tEventBus } from "@/interfaces/event-bus";
 import type { tGameState } from "@/interfaces/game-state";
 import { DISK_HEIGHT } from "@/config/entities";
@@ -25,8 +24,6 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
   private diskEntitiesPool: tDiskEntity[] = [];
   private diskEntities: tDiskEntity[] = [];
   constructor(
-    @inject(DI_TYPES.rendererViewportState)
-    private viewportState: tRendererViewportState,
     @inject(DI_TYPES.eventBus) private eventBus: tEventBus,
     @inject(DI_TYPES.gameState) private gameState: tGameState,
     @inject(DI_TYPES.uiState) private uiState: tUiState,
@@ -68,7 +65,7 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
         diskEntity.weightTextAlphaChannel = this.uiState.showDiskWeight ? 1 : 0;
         diskEntity.move({
           x: pegEntity.centerX,
-          y: this.viewportState.height - offsetY * DISK_HEIGHT,
+          y: this.uiState.canvasViewport.height - offsetY * DISK_HEIGHT,
           // animate the move only if this entity is already visible
           animate: diskEntity.alphaChannel !== 0,
         });
@@ -106,7 +103,7 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
         pegEntity.draw({
           layer,
           x: pegX,
-          y: this.viewportState.height,
+          y: this.uiState.canvasViewport.height,
           yOffset: offset,
           height: DISK_HEIGHT * MAX_DISKS_COUNT,
         });
@@ -172,7 +169,9 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
     const disksOnPeg = this.gameState.pegs[dstPeg];
     diskEntity.move({
       x: pegEntity.centerX,
-      y: this.viewportState.height - (disksOnPeg.length - 1) * DISK_HEIGHT,
+      y:
+        this.uiState.canvasViewport.height -
+        (disksOnPeg.length - 1) * DISK_HEIGHT,
       animate: true,
     });
     this.syncEntitiesInteractivityState();
@@ -212,7 +211,7 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
           `Missing peg at index ${i} while recalculating the positions`,
         );
       }
-      peg.move({ x: positions[i], y: this.viewportState.height });
+      peg.move({ x: positions[i], y: this.uiState.canvasViewport.height });
     }
   };
   private syncEntitiesInteractivityState() {
@@ -237,7 +236,7 @@ export class EntitiesOrchestrator implements tEntitiesOrchestrator {
     return this.diskEntities.find((d) => d.weight === id) || null;
   }
   private calcPegsXPositions(): [number, number, number] {
-    const xStep = this.viewportState.width / 4;
+    const xStep = this.uiState.canvasViewport.width / 4;
     const acc: number[] = [];
     for (const mul of _.range(1, 4)) {
       acc.push(xStep * mul);

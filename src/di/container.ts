@@ -8,8 +8,6 @@ import type { tEventBus } from "@/interfaces/event-bus";
 import { EventBus } from "@/event-bus/event-bus";
 import type { tEntitiesOrchestrator } from "@/interfaces/entities-orchestrator";
 import { EntitiesOrchestrator } from "@/entities/entities-orchestrator";
-import type { tRendererViewportState } from "@/interfaces/state";
-import { RendererViewportState } from "@/state/renderer-viewport";
 import { GameState } from "@/state/game";
 import type { tGameState } from "@/interfaces/game-state";
 import type { tDiskEntityFactory } from "@/interfaces/disk-entity";
@@ -24,10 +22,6 @@ const container = new Container();
 container.bind<tEventBus>(DI_TYPES.eventBus).to(EventBus).inSingletonScope();
 container.bind<tGameState>(DI_TYPES.gameState).to(GameState).inSingletonScope();
 container.bind<tUiState>(DI_TYPES.uiState).to(UiState).inSingletonScope();
-container
-  .bind<tRendererViewportState>(DI_TYPES.rendererViewportState)
-  .to(RendererViewportState)
-  .inSingletonScope();
 container.bind<tRenderer>(DI_TYPES.renderer).to(Renderer).inSingletonScope();
 container.bind<tApp>(DI_TYPES.app).to(Application).inSingletonScope();
 container
