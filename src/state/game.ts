@@ -243,14 +243,14 @@ export class GameState implements tGameState {
         return;
       }
       this._moveDisk(move);
-      yield wait(DISK_MOVE_ANIM_DUR_MS);
       this.stepsHistory.push({
         srcPeg: move.srcPeg,
         dstPeg: move.dstPeg,
       });
       this.changeStepsCount(this.currentStep + 1);
+      yield wait(DISK_MOVE_ANIM_DUR_MS);
     }
-		this.solverPromise = null;
+    this.solverPromise = null;
     this.stopSolver();
   });
   private _moveDisk(step: tStepsHistoryEntry) {
